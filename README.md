@@ -1,4 +1,4 @@
-# ⏱️ TCB Time - Live Flip Clock & Weather Command Station
+# TCB Time - Live Flip Clock and Weather Command Station
 
 A modern, immersive real-time dashboard featuring an authentic vintage flip clock, live weather intelligence, dynamic regional pulse, AI audio briefings, and Supabase database logging.
 
@@ -10,30 +10,30 @@ A modern, immersive real-time dashboard featuring an authentic vintage flip cloc
 
 ---
 
-## ✨ Features
+## Features
 
-- 🕰️ **Mechanical Flip Clock**: Ultra-smooth mechanical flip card animations with real-time seconds, minutes, and hours display.
-- 🌦️ **Live Weather Station**: Accurate real-time atmospheric data powered by Open-Meteo (temperature, humidity, wind speed, UV index, and conditions).
-- 🎙️ **AI Audio Briefing**: Generative audio weather synthesis and voice briefings for selected regions.
-- 🔍 **Interactive City Search**: Instant location lookup with automated geolocation fallback.
-- 📰 **Regional Pulse & News Feed**: Live localized feeds and updates for surrounding areas.
-- 🗄️ **Supabase & Prisma Integration**: Automated logging of daily weather records and historical telemetry into Supabase PostgreSQL.
+- **Mechanical Flip Clock**: Mechanical flip card animations with real-time seconds, minutes, and hours display.
+- **Live Weather Station**: Real-time atmospheric data powered by Open-Meteo (temperature, humidity, wind speed, UV index, and conditions).
+- **AI Audio Briefing**: Generative audio weather synthesis and voice briefings for selected regions.
+- **Interactive City Search**: Location lookup with automated geolocation fallback.
+- **Regional Pulse and News Feed**: Localized feeds and updates for surrounding areas.
+- **Supabase and Prisma Integration**: Automated logging of daily weather records and historical telemetry into Supabase PostgreSQL.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **Library**: [React 19](https://react.dev/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: Vanilla CSS Modules (Glassmorphism & Flip Animations)
+- **Styling**: Vanilla CSS Modules (Glassmorphism and Flip Animations)
 - **ORM**: [Prisma ORM](https://www.prisma.io/)
 - **Database**: [Supabase PostgreSQL](https://supabase.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the repository
 ```bash
@@ -68,5 +68,5 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📄 License
+## License
 This project is open source and available under the [MIT License](LICENSE).
