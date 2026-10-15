@@ -1,0 +1,328 @@
+.weatherCard {
+  display: flex;
+  flex-direction: column;
+  background: rgba(18, 20, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 0.85rem 1rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 
+    0 15px 30px -10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  height: 100%;
+  overflow: hidden;
+  justify-content: space-between;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.cardTag {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #38bdf8;
+  display: block;
+}
+
+.locationTitle {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.unitToggle {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.unitToggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mainDisplay {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.weatherVisual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0) 70%);
+}
+
+.iconSun { color: #f59e0b; filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)); }
+.iconMoon { color: #cbd5e1; filter: drop-shadow(0 0 6px rgba(203, 213, 225, 0.3)); }
+.iconCloudSun { color: #38bdf8; }
+.iconCloud { color: #94a3b8; }
+.iconRain { color: #60a5fa; }
+.iconThunder { color: #fbbf24; }
+.iconSnow { color: #e2e8f0; }
+.iconFog { color: #64748b; }
+
+.tempBox {
+  flex: 1;
+}
+
+.temperature {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 2.3rem;
+  line-height: 1;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+.conditionStatus {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.feelsLikeBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.statLabel {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.statVal {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+/* AI Weather Description Card */
+.aiDescriptionCard {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.75rem;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 12px;
+}
+
+.aiDescHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #38bdf8;
+  margin-bottom: 0.2rem;
+}
+
+.sparkleIcon {
+  color: #38bdf8;
+}
+
+.aiDescText {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #e2e8f0;
+  margin: 0;
+  font-weight: 400;
+}
+
+.aiAdvisoryTag {
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px dashed rgba(56, 189, 248, 0.2);
+  font-size: 0.7rem;
+  color: #bae6fd;
+}
+
+.aiAdvisoryTag span {
+  font-weight: 600;
+  color: #7dd3fc;
+}
+
+/* Metrics 4x1 or 2x2 Grid */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  margin: 0.4rem 0;
+}
+
+.metricItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0.35rem 0.45rem;
+  border-radius: 10px;
+}
+
+.metricIcon {
+  color: #38bdf8;
+  opacity: 0.85;
+}
+
+.metricInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.metricLabel {
+  font-size: 0.58rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.metricValue {
+  font-size: 0.78rem;
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+/* Sun Times */
+.sunRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-bottom: 0.4rem;
+}
+
+.sunItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sunIcon {
+  color: #f59e0b;
+}
+
+.sunItem strong {
+  color: #f1f5f9;
+}
+
+/* 5-Day Forecast Strip */
+.forecastSection {
+  margin-top: 0.2rem;
+}
+
+.forecastSectionTitle {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.forecastStrip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.35rem;
+}
+
+.forecastDayCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0.2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+.forecastDayName {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 0.2rem;
+}
+
+.forecastDayIcon {
+  margin-bottom: 0.2rem;
+}
+
+.forecastTemps {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.maxTemp {
+  color: #f8fafc;
+}
+
+.minTemp {
+  color: #64748b;
+  font-size: 0.58rem;
+}
+
+/* Skeletons */
+.skeletonHeader {
+  height: 20px;
+  width: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  margin-bottom: 0.8rem;
+}
+
+.skeletonTemp {
+  height: 50px;
+  width: 70%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 0.8rem;
+}
+
+.skeletonDesc {
+  height: 50px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 0.8rem;
+}
+
+.skeletonGrid {
+  height: 60px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}

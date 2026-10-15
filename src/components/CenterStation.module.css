@@ -1,0 +1,401 @@
+.stationContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem 1.25rem;
+  background: rgba(13, 15, 21, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 
+    0 25px 60px -10px rgba(0, 0, 0, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+/* 1. TOP HEADER */
+.stationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0.5rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.locationMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.livePulseDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  animation: pulseBlink 2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes pulseBlink {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+.cityText {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.tzPill {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.areaSelectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.areaSelectBtn:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+}
+
+.controlsCluster {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ctrlPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 4px 9px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ctrlPill:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.activePill {
+  background-color: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+}
+
+.tempUnitBtn {
+  padding: 4px 8px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tempUnitBtn:hover {
+  background-color: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+}
+
+/* 2. CLOCK STAGE: 2 CARDS HERO */
+.clockStage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2.5vw, 36px);
+  padding: 0.6rem 0;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.centerDivider {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+}
+
+.dividerDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+/* 3. DOCKED INSTRUMENT CONSOLE */
+.instrumentConsole {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+  background: rgba(18, 20, 28, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  padding: 0.85rem 1.15rem;
+  flex-shrink: 0;
+}
+
+/* Top row: Weather on left, Date & Solar on right */
+.consoleRowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.weatherInline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.iconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.weatherIcon {
+  color: #f8fafc;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+}
+
+.tempDegree {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.conditionStack {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.conditionTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.feelsLikeTitle {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.weatherLoading {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* Date and Solar on right */
+.dateAndSolar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.dateString {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+}
+
+.solarPills {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.solarItem {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.solarItem svg {
+  color: #38bdf8;
+}
+
+.solarItem strong {
+  color: #ffffff;
+}
+
+.dotSep {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Row 2: 4-Metrics Grid */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+}
+
+.metricCard {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.metricCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.metricIcon {
+  color: #38bdf8;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.metricDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.metricLabel {
+  font-size: 0.58rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metricValue {
+  font-family: Arial, sans-serif, "Noto Color Emoji";
+  font-size: 0.82rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Row 3: AI Brief Line */
+.aiBriefLine {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sparkle {
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+.aiBriefText {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #cbd5e1;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 840px) {
+  .stationContainer {
+    padding: 0.85rem 0.95rem;
+    border-radius: 20px;
+    height: auto;
+  }
+  .clockStage {
+    padding: 0.35rem 0;
+  }
+  .instrumentConsole {
+    padding: 0.75rem 0.95rem;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dateAndSolar {
+    align-items: flex-start;
+  }
+  .consoleRowTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .stationHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+  .controlsCluster {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
