@@ -8,27 +8,15 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model DailyWeatherLog {
-  id                  String   @id @default(cuid())
-  city                String
-  region              String?
-  country             String
-  countryCode         String?
-  timezone            String?
-  temperature         Float
-  apparentTemperature Float?
-  conditionText       String
-  weatherCode         Int
-  humidity            Int
-  windSpeed           Float
-  uvIndex             Float?
-  surfacePressure     Float?
-  sunrise             String?
-  sunset              String?
-  shortDescription    String?
-  loggedAt            DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model daily_weather_records {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  city        String
+  temperature Decimal  @db.Decimal(4, 1)
+  weather     String
+  date_time   DateTime @default(now()) @db.Timestamptz(6)
 
-  @@index([city, country])
-  @@index([loggedAt])
+  @@index([city], map: "idx_weather_records_city")
+  @@index([date_time(sort: Desc)], map: "idx_weather_records_date_time")
 }
