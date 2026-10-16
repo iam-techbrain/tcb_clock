@@ -47,9 +47,17 @@ export interface DailyForecast {
   tempMin: number;
 }
 
+export interface HourlyForecastItem {
+  timeLabel: string;
+  temp: number;
+  weatherCode: number;
+  isDay: boolean;
+}
+
 export interface WeatherData {
   current: CurrentWeather;
   daily: DailyForecast[];
+  hourly?: HourlyForecastItem[];
   sunrise?: string;
   sunset?: string;
   shortDescription: string;
@@ -64,6 +72,7 @@ export interface NewsItem {
   source: string;
   snippet?: string;
   category: 'Local' | 'Governance' | 'Business' | 'Technology' | 'Culture' | 'Weather';
+  imageUrl?: string;
 }
 
 export interface AIBriefingData {
