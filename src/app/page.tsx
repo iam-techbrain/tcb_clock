@@ -1,76 +1,82 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./page.module.css";
 import { TopNavbar, NavTabType } from "@/components/TopNavbar";
 import { CenterStation } from "@/components/CenterStation";
 import { LeftNewsFeed } from "@/components/LeftNewsFeed";
 import { RightRegionalPulse } from "@/components/RightRegionalPulse";
 import { CitySearchModal } from "@/components/CitySearchModal";
-import { GeoLocationData, WeatherData, AIBriefingData, HourlyForecastItem } from "@/types";
-import { getWeatherInfo } from "@/utils/weatherCodes";
+import {
+  RadarMapModal,
+  NewsListModal,
+  WeatherDetailModal,
+} from "@/components/modals";
+import { useLocation, useWeather, useNewsBriefing, useDataSync } from "@/hooks";
 import { soundFX } from "@/utils/audio";
-import { X, Radio, CloudSun, Map, Newspaper, ImageOff } from "lucide-react";
 
 export default function Home() {
-  const [geo, setGeo] = useState<GeoLocationData | null>(null);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [briefing, setBriefing] = useState<AIBriefingData | null>(null);
+  // 1. Domain Hooks (Location, Weather, AI News Briefing)
+  const { geo, locationMeta, detectLocation, selectCity } = useLocation();
+  const { weather, loadingWeather, fetchWeather } = useWeather();
+  const { briefing, loadingBriefing, fetchBriefing } = useNewsBriefing();
 
-  const [loadingGeo, setLoadingGeo] = useState(true);
-  const [loadingWeather, setLoadingWeather] = useState(true);
-  const [loadingBriefing, setLoadingBriefing] = useState(true);
+  // 2. Generic Data Post/Sync (Posts telemetry to backend API / Supabase)
+  useDataSync({
+    endpoint: "/api/weather-log",
+    data: weather
+      ? {
+          city: locationMeta.city || "Patna",
+          temperature: weather.current.temperature,
+          apparentTemperature: weather.current.apparentTemperature,
+          weather: weather.current.conditionText,
+          conditionText: weather.current.conditionText,
+          weatherCode: weather.current.weatherCode,
+          humidity: weather.current.humidity,
+          windSpeed: weather.current.windSpeed,
+          uvIndex: weather.current.uvIndex,
+          surfacePressure: weather.current.surfacePressure,
+          sunrise: weather.sunrise,
+          sunset: weather.sunset,
+          shortDescription: weather.shortDescription,
+        }
+      : null,
+    syncKey: weather
+      ? `${locationMeta.city}_${weather.current.temperature}_${weather.current.weatherCode}`
+      : undefined,
+  });
 
-  // App Controls
+  // 2. Cockpit Preferences & Display State
   const [is24Hour, setIs24Hour] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFahrenheit, setIsFahrenheit] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState<NavTabType>("dashboard");
+  const [activeMobileTab, setActiveMobileTab] = useState<"left" | "right">("left");
+  const [currentDateStr, setCurrentDateStr] = useState("Fri, Oct 16, 2026");
 
-  // Modals
+  // 3. Modal Dialog Triggers
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isRadarModalOpen, setIsRadarModalOpen] = useState(false);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
-  const [modalMapLayer, setModalMapLayer] = useState<"wind" | "radar" | "clouds" | "waves">("wind");
-  const [modalImgErrors, setModalImgErrors] = useState<Record<string, boolean>>({});
 
-  // Mobile Segmented Tab
-  const [activeMobileTab, setActiveMobileTab] = useState<"left" | "right">("left");
-
-  // Default to Patna, Bihar matching user reference
-  const [locationMeta, setLocationMeta] = useState({
-    city: "Patna",
-    region: "Bihar",
-    country: "India",
-    countryCode: "IN",
-    lat: 25.5941,
-    lon: 85.1376,
-    timezone: "Asia/Kolkata",
-    flagEmoji: "🇮🇳",
-  });
-
-  const [currentDateStr, setCurrentDateStr] = useState("Fri, Oct 16, 2026");
-
-  // Sync sound settings & auto-unlock Web Audio on first user interaction
+  // Sync sound setting & unlock Web Audio context on user gesture
   useEffect(() => {
     soundFX.enabled = soundEnabled;
   }, [soundEnabled]);
 
   useEffect(() => {
-    const handleFirstInteraction = () => {
-      soundFX.unlock();
-    };
-    window.addEventListener("pointerdown", handleFirstInteraction, { passive: true });
-    window.addEventListener("keydown", handleFirstInteraction, { passive: true });
+    const unlockAudio = () => soundFX.unlock();
+    window.addEventListener("pointerdown", unlockAudio, { passive: true, once: true });
+    window.addEventListener("keydown", unlockAudio, { passive: true, once: true });
     return () => {
-      window.removeEventListener("pointerdown", handleFirstInteraction);
-      window.removeEventListener("keydown", handleFirstInteraction);
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
     };
   }, []);
 
-  // Update date string periodically in local timezone
+  // Update date formatted to active city's timezone
   useEffect(() => {
     const updateDate = () => {
       try {
@@ -92,197 +98,65 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [locationMeta.timezone]);
 
-  // 1. Fetch Weather from Open-Meteo
-  const fetchWeather = useCallback(async (lat: number, lon: number, cityName: string) => {
-    setLoadingWeather(true);
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,surface_pressure&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&hourly=temperature_2m,weather_code,is_day&timezone=auto`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch weather");
-
-      const data = await res.json();
-      const current = data.current;
-      const daily = data.daily;
-      const hourly = data.hourly;
-
-      const weatherInfo = getWeatherInfo(current.weather_code, current.is_day === 1);
-
-      const temp = Math.round(current.temperature_2m);
-      const humidity = current.relative_humidity_2m;
-      const wind = Math.round(current.wind_speed_10m);
-
-      const placeLabel = cityName || "Patna";
-      const shortDescription = `Clear sky in ${placeLabel} with temperature around ${temp}°C. Humidity is ${humidity}% and wind speed is ${wind} km/h. Comfortable atmospheric conditions.`;
-
-      let sunriseStr = "05:48 AM";
-      let sunsetStr = "05:21 PM";
-      if (daily?.sunrise?.[0]) {
-        sunriseStr = new Date(daily.sunrise[0]).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      }
-      if (daily?.sunset?.[0]) {
-        sunsetStr = new Date(daily.sunset[0]).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      }
-
-      // Build Hourly Forecast Items
-      const hourlyItems: HourlyForecastItem[] = [];
-      if (hourly?.time && hourly?.temperature_2m) {
-        const labels = ["Now", "9 AM", "12 PM", "3 PM", "6 PM", "9 PM", "12 AM", "3 AM"];
-        for (let i = 0; i < 8; i++) {
-          const stepIndex = i * 3;
-          hourlyItems.push({
-            timeLabel: labels[i] || `${i * 3}:00`,
-            temp: Math.round(hourly.temperature_2m[stepIndex] ?? temp),
-            weatherCode: hourly.weather_code?.[stepIndex] ?? current.weather_code,
-            isDay: (hourly.is_day?.[stepIndex] ?? 1) === 1,
-          });
-        }
-      }
-
-      const weatherObj: WeatherData = {
-        current: {
-          temperature: current.temperature_2m,
-          apparentTemperature: current.apparent_temperature,
-          humidity: current.relative_humidity_2m,
-          windSpeed: current.wind_speed_10m,
-          weatherCode: current.weather_code,
-          isDay: current.is_day === 1,
-          conditionText: weatherInfo.label,
-          uvIndex: daily.uv_index_max ? Math.round(daily.uv_index_max[0]) : 7,
-          surfacePressure: Math.round(current.surface_pressure),
-        },
-        daily: [],
-        hourly: hourlyItems,
-        sunrise: sunriseStr,
-        sunset: sunsetStr,
-        shortDescription,
-        aiAdvisory: "Clear atmospheric window with pleasant daytime stability.",
-      };
-
-      setWeather(weatherObj);
-
-      // Log to Supabase / Prisma if configured
-      fetch("/api/weather-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          city: cityName,
-          temperature: weatherObj.current.temperature,
-          apparentTemperature: weatherObj.current.apparentTemperature,
-          conditionText: weatherObj.current.conditionText,
-          weatherCode: weatherObj.current.weatherCode,
-          humidity: weatherObj.current.humidity,
-          windSpeed: weatherObj.current.windSpeed,
-          uvIndex: weatherObj.current.uvIndex,
-          surfacePressure: weatherObj.current.surfacePressure,
-          sunrise: weatherObj.sunrise,
-          sunset: weatherObj.sunset,
-          shortDescription: weatherObj.shortDescription,
-        }),
-      }).catch(() => {});
-
-      return weatherObj;
-    } catch (err) {
-      console.error("Weather load error:", err);
-      return null;
-    } finally {
-      setLoadingWeather(false);
-    }
-  }, []);
-
-  // 2. Fetch AI Briefing & 10 News items
-  const fetchBriefing = useCallback(async (
-    city: string,
-    region: string,
-    country: string,
-    countryCode: string,
-    weatherObj?: WeatherData | null
-  ) => {
-    setLoadingBriefing(true);
-    try {
-      const desc = weatherObj?.current.conditionText || "Clear";
-      const temp = weatherObj?.current.temperature.toString() || "28";
-      const res = await fetch(
-        `/api/briefing?city=${encodeURIComponent(city)}&region=${encodeURIComponent(
-          region
-        )}&country=${encodeURIComponent(country)}&countryCode=${encodeURIComponent(
-          countryCode
-        )}&weatherDesc=${encodeURIComponent(desc)}&temp=${encodeURIComponent(temp)}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setBriefing(data);
-      }
-    } catch (err) {
-      console.error("Briefing load error:", err);
-    } finally {
-      setLoadingBriefing(false);
-    }
-  }, []);
-
-  // 3. Location Detection
-  const detectLocation = useCallback(async () => {
-    setLoadingGeo(true);
-    try {
-      let geoData: GeoLocationData | null = null;
-      try {
-        const res = await fetch("https://ipwho.is/", { cache: "no-store" });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success !== false) {
-            geoData = json;
-          }
-        }
-      } catch {
-        const fallbackRes = await fetch("/api/geo");
-        if (fallbackRes.ok) {
-          geoData = await fallbackRes.json();
-        }
-      }
-
-      if (geoData) {
-        setGeo(geoData);
-        const newMeta = {
-          city: geoData.city || "Patna",
-          region: geoData.region || "Bihar",
-          country: geoData.country || "India",
-          countryCode: geoData.country_code || "IN",
-          lat: geoData.latitude || 25.5941,
-          lon: geoData.longitude || 85.1376,
-          timezone: geoData.timezone?.id || "Asia/Kolkata",
-          flagEmoji: geoData.flag?.emoji || "🇮🇳",
-        };
-        setLocationMeta(newMeta);
-
-        const wObj = await fetchWeather(newMeta.lat, newMeta.lon, newMeta.city);
-        await fetchBriefing(newMeta.city, newMeta.region, newMeta.country, newMeta.countryCode, wObj);
-      } else {
-        // Fallback to Patna
-        const wObj = await fetchWeather(locationMeta.lat, locationMeta.lon, locationMeta.city);
-        await fetchBriefing(locationMeta.city, locationMeta.region, locationMeta.country, locationMeta.countryCode, wObj);
-      }
-    } catch (err) {
-      console.error("Location detection error:", err);
-    } finally {
-      setLoadingGeo(false);
-    }
-  }, [fetchWeather, fetchBriefing, locationMeta.lat, locationMeta.lon, locationMeta.city, locationMeta.country, locationMeta.countryCode, locationMeta.region]);
-
+  // Synchronize weather and news briefing whenever location changes
   useEffect(() => {
-    detectLocation();
-  }, [detectLocation]);
+    let isMounted = true;
+    fetchWeather(locationMeta.lat, locationMeta.lon, locationMeta.city).then((wObj) => {
+      if (isMounted) {
+        fetchBriefing(
+          locationMeta.city,
+          locationMeta.region,
+          locationMeta.country,
+          locationMeta.countryCode,
+          wObj
+        );
+      }
+    });
 
-  // Periodic refresh
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    locationMeta.lat,
+    locationMeta.lon,
+    locationMeta.city,
+    locationMeta.region,
+    locationMeta.country,
+    locationMeta.countryCode,
+    fetchWeather,
+    fetchBriefing,
+  ]);
+
+  // 120-second background telemetry refresh
   useEffect(() => {
     const timer = setInterval(() => {
       fetchWeather(locationMeta.lat, locationMeta.lon, locationMeta.city).then((wObj) => {
-        fetchBriefing(locationMeta.city, locationMeta.region, locationMeta.country, locationMeta.countryCode, wObj);
+        fetchBriefing(
+          locationMeta.city,
+          locationMeta.region,
+          locationMeta.country,
+          locationMeta.countryCode,
+          wObj
+        );
       });
     }, 120000);
 
     return () => clearInterval(timer);
   }, [locationMeta, fetchWeather, fetchBriefing]);
 
-  const handleSelectCity = async (selected: {
+  // Action Handlers
+  const handleManualRefresh = async () => {
+    const wObj = await fetchWeather(locationMeta.lat, locationMeta.lon, locationMeta.city);
+    await fetchBriefing(
+      locationMeta.city,
+      locationMeta.region,
+      locationMeta.country,
+      locationMeta.countryCode,
+      wObj
+    );
+  };
+
+  const handleSelectCity = (selected: {
     name: string;
     region: string;
     country: string;
@@ -291,58 +165,19 @@ export default function Home() {
     longitude: number;
     timezone: string;
   }) => {
-    const newMeta = {
-      city: selected.name,
-      region: selected.region,
-      country: selected.country,
-      countryCode: selected.countryCode,
-      lat: selected.latitude,
-      lon: selected.longitude,
-      timezone: selected.timezone,
-      flagEmoji: "📍",
-    };
-    setLocationMeta(newMeta);
-
-    if (geo) {
-      setGeo({
-        ...geo,
-        city: selected.name,
-        region: selected.region,
-        country: selected.country,
-        country_code: selected.countryCode,
-        latitude: selected.latitude,
-        longitude: selected.longitude,
-        timezone: {
-          ...geo.timezone,
-          id: selected.timezone,
-        },
-      });
-    }
-
-    const wObj = await fetchWeather(newMeta.lat, newMeta.lon, newMeta.city);
-    await fetchBriefing(newMeta.city, newMeta.region, newMeta.country, newMeta.countryCode, wObj);
+    selectCity(selected);
   };
 
-  const handleManualRefresh = async () => {
-    const wObj = await fetchWeather(locationMeta.lat, locationMeta.lon, locationMeta.city);
-    await fetchBriefing(locationMeta.city, locationMeta.region, locationMeta.country, locationMeta.countryCode, wObj);
-  };
-
-  // Nav tab actions
   const handleTabSelect = (tab: NavTabType) => {
     setActiveTab(tab);
-    if (tab === "news") {
-      setIsNewsModalOpen(true);
-    } else if (tab === "weather") {
-      setIsWeatherModalOpen(true);
-    } else if (tab === "maps") {
-      setIsRadarModalOpen(true);
-    }
+    if (tab === "news") setIsNewsModalOpen(true);
+    else if (tab === "weather") setIsWeatherModalOpen(true);
+    else if (tab === "maps") setIsRadarModalOpen(true);
   };
 
   return (
     <main className={styles.appWrapper}>
-      {/* 1. TOP NAVBAR (Full-width header as in Image 2) */}
+      {/* 1. TOP NAVBAR */}
       <TopNavbar
         cityName={locationMeta.city}
         regionName={locationMeta.region}
@@ -361,9 +196,9 @@ export default function Home() {
         onToggleTheme={() => setIsDarkMode(!isDarkMode)}
       />
 
-      {/* 2. MAIN COCKPIT VIEWPORT */}
+      {/* 2. COCKPIT VIEWPORT */}
       <div className={styles.viewportArea}>
-        {/* DESKTOP 3-COLUMN COCKPIT (Left News 1-5 | Center Station | Right Radar + News 6-10) */}
+        {/* DESKTOP 3-COLUMN COCKPIT GRID */}
         <div className={styles.cockpitGrid}>
           {/* Left Column: Headlines 01 to 05 */}
           <section className={styles.leftColumn}>
@@ -375,7 +210,7 @@ export default function Home() {
             />
           </section>
 
-          {/* Center Column: Panoramic Riverfront Sunset + Circular Gauge Clock + Docked Weather + Hourly Forecast */}
+          {/* Center Column: Clock, Gauge, Sun/Moon, Weather, 8h Forecast */}
           <section className={styles.centerColumn}>
             <CenterStation
               timezone={locationMeta.timezone}
@@ -390,7 +225,7 @@ export default function Home() {
             />
           </section>
 
-          {/* Right Column: Regional Radar Map + Headlines 06 to 10 + Network Telemetry */}
+          {/* Right Column: Live Radar Map + Headlines 06 to 10 */}
           <section className={styles.rightColumn}>
             <RightRegionalPulse
               briefing={briefing}
@@ -408,7 +243,7 @@ export default function Home() {
           </section>
         </div>
 
-        {/* MOBILE VIEWPORT (Segmented Responsive Flow) */}
+        {/* MOBILE VIEWPORT (Segmented responsive layout) */}
         <div className={styles.mobileContainer}>
           <section className={styles.mobileCenterSection}>
             <CenterStation
@@ -466,7 +301,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 3. CITY SEARCH MODAL */}
+      {/* 3. MODAL DIALOGS */}
       <CitySearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
@@ -474,245 +309,27 @@ export default function Home() {
         onUseCurrentLocation={detectLocation}
       />
 
-      {/* 4. EXPANDED RADAR & MAPS MODAL (Live interactive weather radar map) */}
-      {isRadarModalOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setIsRadarModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <Map size={18} color="#38bdf8" />
-                <span>Live Weather & Radar Map • {locationMeta.city}{locationMeta.region ? `, ${locationMeta.region}` : ""}</span>
-              </div>
-              <button className={styles.modalCloseBtn} onClick={() => setIsRadarModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              {/* Layer Switcher Controls */}
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>
-                <button
-                  onClick={() => { soundFX.playClick(); setModalMapLayer("wind"); }}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: modalMapLayer === "wind" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
-                    color: "#ffffff",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  💨 Wind Streams (Hawa)
-                </button>
-                <button
-                  onClick={() => { soundFX.playClick(); setModalMapLayer("radar"); }}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: modalMapLayer === "radar" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
-                    color: "#ffffff",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  🌧️ Rain & Radar (Barish)
-                </button>
-                <button
-                  onClick={() => { soundFX.playClick(); setModalMapLayer("clouds"); }}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: modalMapLayer === "clouds" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
-                    color: "#ffffff",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  ☁️ Satellite Clouds (Badal)
-                </button>
-                <button
-                  onClick={() => { soundFX.playClick(); setModalMapLayer("waves"); }}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    background: modalMapLayer === "waves" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
-                    color: "#ffffff",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  🌊 Waves & Tsunami (Toofan)
-                </button>
-              </div>
+      <RadarMapModal
+        isOpen={isRadarModalOpen}
+        onClose={() => setIsRadarModalOpen(false)}
+        location={locationMeta}
+      />
 
-              {/* Live Interactive Map Iframe */}
-              <div style={{ position: "relative", width: "100%", height: "420px", borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(255, 255, 255, 0.12)", background: "#060911" }}>
-                <iframe
-                  src={`https://embed.windy.com/embed2.html?lat=${locationMeta.lat}&lon=${locationMeta.lon}&detailLat=${locationMeta.lat}&detailLon=${locationMeta.lon}&width=100%25&height=100%25&zoom=6&level=surface&overlay=${modalMapLayer}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
-                  style={{ width: "100%", height: "100%", border: "none" }}
-                  title={`Weather Map for ${locationMeta.city}`}
-                  allow="geolocation"
-                />
-              </div>
+      <NewsListModal
+        isOpen={isNewsModalOpen}
+        onClose={() => setIsNewsModalOpen(false)}
+        cityName={locationMeta.city}
+        news={briefing?.news || []}
+      />
 
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#94a3b8" }}>
-                <span>Layer: {modalMapLayer.toUpperCase()} • Centered on {locationMeta.city}</span>
-                <span>Coordinates: {locationMeta.lat.toFixed(2)}°, {locationMeta.lon.toFixed(2)}°</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. EXPANDED ALL NEWS MODAL */}
-      {isNewsModalOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setIsNewsModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <Newspaper size={18} color="#38bdf8" />
-                <span>All Regional & Global Headlines • {locationMeta.city}</span>
-              </div>
-              <button className={styles.modalCloseBtn} onClick={() => setIsNewsModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              {(briefing?.news || []).map((item, idx) => (
-                <a
-                  key={idx}
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.85rem",
-                    padding: "0.75rem 1rem",
-                    background: "rgba(255, 255, 255, 0.04)",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    textDecoration: "none",
-                    color: "inherit",
-                  }}
-                >
-                  <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#38bdf8", width: "24px" }}>
-                    {String(idx + 1).padStart(2, "0")}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "0.68rem", color: "#94a3b8", display: "flex", gap: "0.5rem" }}>
-                      <strong>{item.source}</strong> • {item.pubDate}
-                    </div>
-                    <div style={{ fontSize: "0.84rem", fontWeight: 600, color: "#f8fafc", marginTop: "2px" }}>
-                      {item.title}
-                    </div>
-                  </div>
-                  {item.imageUrl && !modalImgErrors[item.id || String(idx)] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.imageUrl}
-                      alt=""
-                      onError={() => setModalImgErrors((prev) => ({ ...prev, [item.id || String(idx)]: true }))}
-                      style={{
-                        width: "64px",
-                        height: "46px",
-                        borderRadius: "8px",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                        border: "1px solid rgba(255, 255, 255, 0.1)",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "64px",
-                        height: "46px",
-                        borderRadius: "8px",
-                        background: "rgba(17, 24, 39, 0.7)",
-                        border: "1px dashed rgba(255, 255, 255, 0.14)",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "2px",
-                        flexShrink: 0,
-                        color: "#64748b",
-                        fontSize: "0.52rem",
-                        fontWeight: 700,
-                        letterSpacing: "0.04em",
-                        userSelect: "none",
-                      }}
-                    >
-                      <ImageOff size={13} style={{ color: "#475569" }} />
-                      <span>NO IMAGE</span>
-                    </div>
-                  )}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. EXPANDED WEATHER & ATMOSPHERIC INSIGHTS MODAL */}
-      {isWeatherModalOpen && (
-        <div className={styles.modalBackdrop} onClick={() => setIsWeatherModalOpen(false)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <CloudSun size={18} color="#f59e0b" />
-                <span>Atmospheric Telemetry & Forecast • {locationMeta.city}</span>
-              </div>
-              <button className={styles.modalCloseBtn} onClick={() => setIsWeatherModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
-                <div style={{ background: "rgba(255, 255, 255, 0.04)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <div style={{ fontSize: "0.74rem", color: "#94a3b8" }}>Temperature</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#ffffff" }}>
-                    {weather?.current.temperature ?? 28}°C
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#38bdf8" }}>
-                    Feels like {weather?.current.apparentTemperature ?? 33}°C
-                  </div>
-                </div>
-                <div style={{ background: "rgba(255, 255, 255, 0.04)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                  <div style={{ fontSize: "0.74rem", color: "#94a3b8" }}>Atmospheric Conditions</div>
-                  <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#ffffff", marginTop: "4px" }}>
-                    {weather?.current.conditionText || "Clear Sky"}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#f59e0b" }}>
-                    UV Index: {weather?.current.uvIndex ?? 7} (High)
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#38bdf8", marginBottom: "0.4rem" }}>
-                  AI Advisory & Environmental Summary
-                </div>
-                <p style={{ fontSize: "0.82rem", color: "#cbd5e1", lineHeight: 1.5 }}>
-                  {briefing?.weatherNarrative || weather?.shortDescription}
-                </p>
-                {briefing?.lifestyleTip && (
-                  <p style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: "0.5rem" }}>
-                    💡 <strong>Tip:</strong> {briefing.lifestyleTip}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <WeatherDetailModal
+        isOpen={isWeatherModalOpen}
+        onClose={() => setIsWeatherModalOpen(false)}
+        cityName={locationMeta.city}
+        weather={weather}
+        weatherNarrative={briefing?.weatherNarrative}
+        lifestyleTip={briefing?.lifestyleTip}
+      />
     </main>
   );
 }

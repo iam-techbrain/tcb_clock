@@ -1,0 +1,117 @@
+================================================================================
+           COMPLETE LIST OF ALL WEB & API CALLS USED IN THIS PROJECT
+================================================================================
+Project: Retro Clock, AI Weather & Regional Radar (tcb_time)
+Generated Date: 16 October 2026
+
+--------------------------------------------------------------------------------
+1. WEATHER DATA API
+--------------------------------------------------------------------------------
+• Provider: Open-Meteo Weather API
+• URL: https://api.open-meteo.com/v1/forecast
+• Type: External REST API (Free, No API key required)
+• Used In: src/hooks/useWeather.ts
+• Purpose: 
+  - Current temperature, apparent temperature ("feels like")
+  - Relative humidity, wind speed, weather code, surface pressure
+  - Daily sunrise, sunset, maximum UV index
+  - 8-slot hourly temperature & weather forecast
+
+--------------------------------------------------------------------------------
+2. LIVE LOCATION DETECTION API
+--------------------------------------------------------------------------------
+• Provider: IPWHOIS.io
+• URL: https://ipwho.is/
+• Type: External REST API (Automatic IP Geolocation)
+• Used In: src/hooks/useLocation.ts & src/app/api/geo/route.ts
+• Purpose: 
+  - User ki real-time IP address detect karna
+  - User ka city, state/region, country code, postal code nikalna
+  - Real latitude & longitude aur local timezone (e.g. Asia/Kolkata) nikalna
+  - ISP network telemetry (e.g. Fastnet, Airtel, etc.)
+
+--------------------------------------------------------------------------------
+3. CITY SEARCH GEOCODING API
+--------------------------------------------------------------------------------
+• Provider: Open-Meteo Geocoding API
+• URL: https://geocoding-api.open-meteo.com/v1/search?name={query}&count=8&language=en&format=json
+• Type: External REST API
+• Used In: src/components/CitySearchModal.tsx
+• Purpose: 
+  - Jab user search box me kisi bhi world city ka naam type karta hai (e.g. Moscow, London, Patna), 
+    ye API coordinates aur timezone list return karti hai.
+
+--------------------------------------------------------------------------------
+4. REGIONAL & GLOBAL NEWS FEED API
+--------------------------------------------------------------------------------
+• Provider: Google News RSS Search Feed
+• URL: https://news.google.com/rss/search?q={query}&hl=en-{countryCode}&gl={countryCode}&ceid={countryCode}:en
+• Type: External XML/RSS Feed
+• Used In: src/app/api/briefing/route.ts (consumed via src/hooks/useNewsBriefing.ts)
+• Purpose: 
+  - Selected city, state aur country ke latest verified news headlines nikalna
+  - Real-time timestamps aur source badges provide karna
+
+--------------------------------------------------------------------------------
+5. DATABASE STORAGE (SUPABASE POSTGRESQL via PRISMA)
+--------------------------------------------------------------------------------
+• Provider: Supabase Database (PostgreSQL)
+• Driver: Prisma ORM (@prisma/client)
+• Connection: DATABASE_URL & DIRECT_URL (via .env)
+• Table: daily_weather_records
+• Used In: src/app/api/weather-log/route.ts (triggered via generic src/services/dataService.ts & src/hooks/useDataSync.ts)
+• Purpose: 
+  - Har baar weather change ya refresh hone par sheher ka naam, temperature aur weather condition 
+    Supabase database table 'daily_weather_records' me record save (POST) karna
+  - Puraane weather logs retrieve (GET) karna
+
+--------------------------------------------------------------------------------
+6. LIVE SATELLITE RADAR & WIND MAP (MICROSOFT/WINDY STYLE)
+--------------------------------------------------------------------------------
+• Provider: Windy.com (ECMWF Weather Model)
+• URL: https://embed.windy.com/embed2.html?lat={lat}&lon={lon}...
+• Type: Web Iframe Embed
+• Used In: src/components/RightRegionalPulse.tsx & src/components/modals/RadarMapModal.tsx
+• Purpose: 
+  - Live animated wind particle flow ("Hawa")
+  - Live Doppler precipitation & storm radar ("Barish")
+  - Live satellite cloud cover ("Badal")
+  - Live ocean swell, waves, tsunami & cyclone tracking ("Toofan")
+
+--------------------------------------------------------------------------------
+7. NEWS THUMBNAIL MEDIA CDN
+--------------------------------------------------------------------------------
+• Provider: Unsplash Image CDN
+• URL: https://images.unsplash.com/...
+• Type: Static Image CDN
+• Used In: src/app/api/briefing/route.ts & src/components/LeftNewsFeed.tsx
+• Purpose: 
+  - News headlines ke liye high-resolution visual thumbnails serve karna 
+    (Data center, trains, metro, solar, technology, infrastructure photos)
+
+--------------------------------------------------------------------------------
+8. GOOGLE WEB FONTS
+--------------------------------------------------------------------------------
+• Provider: Google Fonts CDN
+• URL: https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap
+• Type: Web CSS / Font Assets
+• Used In: src/app/globals.css
+• Purpose: 
+  - Modern 'Outfit' numbers font aur calligraphic 'Caveat' script greeting font load karna
+
+--------------------------------------------------------------------------------
+9. INTERNAL NEXT.JS API ROUTES (Project ke apne APIs)
+--------------------------------------------------------------------------------
+• /api/weather-log   -> Supabase me weather save aur read karne ke liye
+• /api/briefing      -> News RSS fetch karke AI lifestyle advisory synthesize karne ke liye
+• /api/geo           -> Fallback IP location lookup ke liye
+
+--------------------------------------------------------------------------------
+10. NOTE ON TIME (CLOCK)
+--------------------------------------------------------------------------------
+• External API Call: NO (0 Calls)
+• Logic: Local JavaScript runtime (new Date() aur Intl.DateTimeFormat)
+• Explanation: Clock ke liye koi bhi external API call nahi hoti. Ye browser ke device 
+  clock aur selected city ke timezone offset ke hisab se 100% local chalti hai.
+
+================================================================================

@@ -26,6 +26,17 @@ export interface GeoLocationData {
   };
 }
 
+export interface LocationMeta {
+  city: string;
+  region: string;
+  country: string;
+  countryCode: string;
+  lat: number;
+  lon: number;
+  timezone: string;
+  flagEmoji: string;
+}
+
 export interface CurrentWeather {
   temperature: number;
   apparentTemperature: number;
