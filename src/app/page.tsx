@@ -10,7 +10,7 @@ import { CitySearchModal } from "@/components/CitySearchModal";
 import { GeoLocationData, WeatherData, AIBriefingData, HourlyForecastItem } from "@/types";
 import { getWeatherInfo } from "@/utils/weatherCodes";
 import { soundFX } from "@/utils/audio";
-import { X, Radio, CloudSun, Map, Newspaper } from "lucide-react";
+import { X, Radio, CloudSun, Map, Newspaper, ImageOff } from "lucide-react";
 
 export default function Home() {
   const [geo, setGeo] = useState<GeoLocationData | null>(null);
@@ -33,6 +33,8 @@ export default function Home() {
   const [isRadarModalOpen, setIsRadarModalOpen] = useState(false);
   const [isWeatherModalOpen, setIsWeatherModalOpen] = useState(false);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const [modalMapLayer, setModalMapLayer] = useState<"wind" | "radar" | "clouds" | "waves">("wind");
+  const [modalImgErrors, setModalImgErrors] = useState<Record<string, boolean>>({});
 
   // Mobile Segmented Tab
   const [activeMobileTab, setActiveMobileTab] = useState<"left" | "right">("left");
@@ -472,62 +474,96 @@ export default function Home() {
         onUseCurrentLocation={detectLocation}
       />
 
-      {/* 4. EXPANDED RADAR & MAPS MODAL (100% Dynamic for any city in the world) */}
+      {/* 4. EXPANDED RADAR & MAPS MODAL (Live interactive weather radar map) */}
       {isRadarModalOpen && (
         <div className={styles.modalBackdrop} onClick={() => setIsRadarModalOpen(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
                 <Map size={18} color="#38bdf8" />
-                <span>Regional Weather Radar • {locationMeta.city}{locationMeta.region ? `, ${locationMeta.region}` : ""}</span>
+                <span>Live Weather & Radar Map • {locationMeta.city}{locationMeta.region ? `, ${locationMeta.region}` : ""}</span>
               </div>
               <button className={styles.modalCloseBtn} onClick={() => setIsRadarModalOpen(false)}>
                 <X size={18} />
               </button>
             </div>
             <div className={styles.modalBody}>
-              <div style={{ position: "relative", width: "100%", height: "360px", borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(255, 255, 255, 0.12)", background: "#060911" }}>
-                <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 50% 50%, #0d1e38 0%, #040711 100%)" }} />
-                <svg viewBox="0 0 600 360" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-                  {/* Dynamic Range rings */}
-                  <circle cx="300" cy="180" r="50" fill="none" stroke="rgba(56, 189, 248, 0.25)" strokeWidth="1" strokeDasharray="4 4" />
-                  <circle cx="300" cy="180" r="110" fill="none" stroke="rgba(56, 189, 248, 0.2)" strokeWidth="1" strokeDasharray="6 6" />
-                  <circle cx="300" cy="180" r="160" fill="none" stroke="rgba(56, 189, 248, 0.15)" strokeWidth="1" />
-                  
-                  {/* Crosshairs */}
-                  <line x1="300" y1="10" x2="300" y2="350" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
-                  <line x1="10" y1="180" x2="590" y2="180" stroke="rgba(255, 255, 255, 0.08)" strokeWidth="1" />
-
-                  {/* Range labels */}
-                  <text x="306" y="135" fill="rgba(255,255,255,0.3)" fontSize="9" fontFamily="monospace">50 KM</text>
-                  <text x="306" y="75" fill="rgba(255,255,255,0.3)" fontSize="9" fontFamily="monospace">100 KM</text>
-                  <text x="306" y="25" fill="rgba(255,255,255,0.3)" fontSize="9" fontFamily="monospace">150 KM</text>
-
-                  {/* Doppler precipitation heatmap */}
-                  <ellipse cx="380" cy="160" rx="90" ry="60" fill="#22c55e" opacity="0.3" filter="blur(16px)" />
-                  <ellipse cx="390" cy="155" rx="55" ry="35" fill="#eab308" opacity="0.5" filter="blur(10px)" />
-                  <ellipse cx="395" cy="150" rx="25" ry="18" fill="#ef4444" opacity="0.7" filter="blur(6px)" />
-                  
-                  {/* Dynamic Regional Labels based on Selected City & Coordinates */}
-                  <text x="300" y="198" fill="#ffffff" fontSize="13" fontWeight="800" textAnchor="middle">
-                    📍 {locationMeta.city}
-                  </text>
-                  <text x="40" y="40" fill="rgba(56, 189, 248, 0.7)" fontSize="11" fontWeight="700">
-                    {locationMeta.region || locationMeta.country} North Sector
-                  </text>
-                  <text x="40" y="330" fill="rgba(255, 255, 255, 0.4)" fontSize="10" fontFamily="monospace">
-                    LAT: {Math.abs(locationMeta.lat).toFixed(4)}° {locationMeta.lat >= 0 ? "N" : "S"} | LON: {Math.abs(locationMeta.lon).toFixed(4)}° {locationMeta.lon >= 0 ? "E" : "W"}
-                  </text>
-                  <text x="560" y="40" fill="rgba(255, 255, 255, 0.4)" fontSize="11" textAnchor="end">
-                    {locationMeta.country}
-                  </text>
-                  <text x="560" y="330" fill="rgba(56, 189, 248, 0.6)" fontSize="10" textAnchor="end">
-                    BAND: 5.6 GHz Doppler C-Band
-                  </text>
-                </svg>
+              {/* Layer Switcher Controls */}
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>
+                <button
+                  onClick={() => { soundFX.playClick(); setModalMapLayer("wind"); }}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: modalMapLayer === "wind" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
+                    color: "#ffffff",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  💨 Wind Streams (Hawa)
+                </button>
+                <button
+                  onClick={() => { soundFX.playClick(); setModalMapLayer("radar"); }}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: modalMapLayer === "radar" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
+                    color: "#ffffff",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  🌧️ Rain & Radar (Barish)
+                </button>
+                <button
+                  onClick={() => { soundFX.playClick(); setModalMapLayer("clouds"); }}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: modalMapLayer === "clouds" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
+                    color: "#ffffff",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  ☁️ Satellite Clouds (Badal)
+                </button>
+                <button
+                  onClick={() => { soundFX.playClick(); setModalMapLayer("waves"); }}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: modalMapLayer === "waves" ? "#2563eb" : "rgba(255, 255, 255, 0.04)",
+                    color: "#ffffff",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  🌊 Waves & Tsunami (Toofan)
+                </button>
               </div>
+
+              {/* Live Interactive Map Iframe */}
+              <div style={{ position: "relative", width: "100%", height: "420px", borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(255, 255, 255, 0.12)", background: "#060911" }}>
+                <iframe
+                  src={`https://embed.windy.com/embed2.html?lat=${locationMeta.lat}&lon=${locationMeta.lon}&detailLat=${locationMeta.lat}&detailLon=${locationMeta.lon}&width=100%25&height=100%25&zoom=6&level=surface&overlay=${modalMapLayer}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                  title={`Weather Map for ${locationMeta.city}`}
+                  allow="geolocation"
+                />
+              </div>
+
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#94a3b8" }}>
-                <span>Doppler Reflectivity: Real-time scan centered at {locationMeta.city} radar station</span>
+                <span>Layer: {modalMapLayer.toUpperCase()} • Centered on {locationMeta.city}</span>
                 <span>Coordinates: {locationMeta.lat.toFixed(2)}°, {locationMeta.lon.toFixed(2)}°</span>
               </div>
             </div>
@@ -578,13 +614,45 @@ export default function Home() {
                       {item.title}
                     </div>
                   </div>
-                  {item.imageUrl && (
+                  {item.imageUrl && !modalImgErrors[item.id || String(idx)] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={item.imageUrl}
-                      alt={item.title}
-                      style={{ width: "64px", height: "46px", borderRadius: "8px", objectFit: "cover" }}
+                      alt=""
+                      onError={() => setModalImgErrors((prev) => ({ ...prev, [item.id || String(idx)]: true }))}
+                      style={{
+                        width: "64px",
+                        height: "46px",
+                        borderRadius: "8px",
+                        objectFit: "cover",
+                        flexShrink: 0,
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                      }}
                     />
+                  ) : (
+                    <div
+                      style={{
+                        width: "64px",
+                        height: "46px",
+                        borderRadius: "8px",
+                        background: "rgba(17, 24, 39, 0.7)",
+                        border: "1px dashed rgba(255, 255, 255, 0.14)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "2px",
+                        flexShrink: 0,
+                        color: "#64748b",
+                        fontSize: "0.52rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        userSelect: "none",
+                      }}
+                    >
+                      <ImageOff size={13} style={{ color: "#475569" }} />
+                      <span>NO IMAGE</span>
+                    </div>
                   )}
                 </a>
               ))}

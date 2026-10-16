@@ -3,8 +3,21 @@
 import React, { useState } from "react";
 import styles from "./RightRegionalPulse.module.css";
 import { AIBriefingData, GeoLocationData } from "@/types";
-import { ExternalLink, Crosshair, ArrowRight, Maximize2, MapPin, ImageOff } from "lucide-react";
+import {
+  ExternalLink,
+  Crosshair,
+  ArrowRight,
+  Maximize2,
+  MapPin,
+  ImageOff,
+  Wind,
+  CloudRain,
+  Cloud,
+  Waves,
+} from "lucide-react";
 import { soundFX } from "@/utils/audio";
+
+export type WeatherMapLayer = "wind" | "radar" | "clouds" | "waves";
 
 interface RightRegionalPulseProps {
   briefing: AIBriefingData | null;
@@ -37,6 +50,7 @@ export const RightRegionalPulse: React.FC<RightRegionalPulseProps> = ({
   const displayStories = allNews.length >= 10 ? allNews.slice(5, 10) : allNews.slice(0, 5);
 
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [activeLayer, setActiveLayer] = useState<WeatherMapLayer>("wind");
 
   const handleImageError = (key: string) => {
     setFailedImages((prev) => ({ ...prev, [key]: true }));
@@ -63,13 +77,13 @@ export const RightRegionalPulse: React.FC<RightRegionalPulseProps> = ({
   const regionLabel = regionName || geo?.region || briefing?.region || "";
   const countryLabel = countryName || geo?.country || briefing?.country || "Global";
 
-  // Format real dynamic coordinates
-  const latStr = `${Math.abs(latitude).toFixed(2)}° ${latitude >= 0 ? "N" : "S"}`;
-  const lonStr = `${Math.abs(longitude).toFixed(2)}° ${longitude >= 0 ? "E" : "W"}`;
+  // Dynamic live weather map iframe URL (Windy ECMWF engine with live wind particles, clouds, radar & tsunami/waves)
+  const mapIframeUrl = `https://embed.windy.com/embed2.html?lat=${latitude}&lon=${longitude}&detailLat=${latitude}&detailLon=${longitude}&width=100%25&height=100%25&zoom=5&level=surface&overlay=${activeLayer}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
 
-  // Doppler reflectivity based on current weather condition
-  const hasPrecipitation = weatherCode >= 50 || weatherCode === 45 || weatherCode === 48;
-  const isStormy = weatherCode >= 95;
+  const handleLayerSwitch = (layer: WeatherMapLayer) => {
+    soundFX.playClick();
+    setActiveLayer(layer);
+  };
 
   return (
     <div className={styles.pulseCard}>
@@ -94,169 +108,67 @@ export const RightRegionalPulse: React.FC<RightRegionalPulseProps> = ({
         </button>
       </div>
 
-      {/* 2. DYNAMIC REGIONAL WEATHER RADAR WIDGET (No hardcoded states) */}
+      {/* 2. LIVE INTERACTIVE WEATHER RADAR MAP (Hawa, Badal, Sunami / Waves, Barish) */}
       <div className={styles.radarWidget}>
-        <div className={styles.radarMapBg} />
+        {/* Layer Controls Bar */}
+        <div className={styles.mapLayerBar}>
+          <button
+            className={`${styles.layerBtn} ${activeLayer === "wind" ? styles.activeLayerBtn : ""}`}
+            onClick={() => handleLayerSwitch("wind")}
+            title="Live Wind Streams (Hawa)"
+          >
+            <Wind size={10} />
+            <span>Wind</span>
+          </button>
 
-        {/* Dynamic Vector Radar Screen */}
-        <svg viewBox="0 0 320 120" className={styles.radarSvgOverlay}>
-          <defs>
-            <radialGradient id="radarSweepGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-            </radialGradient>
-            <linearGradient id="sweepBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-            </linearGradient>
-          </defs>
+          <button
+            className={`${styles.layerBtn} ${activeLayer === "radar" ? styles.activeLayerBtn : ""}`}
+            onClick={() => handleLayerSwitch("radar")}
+            title="Live Doppler Weather Radar (Barish)"
+          >
+            <CloudRain size={10} />
+            <span>Radar</span>
+          </button>
 
-          {/* Coordinate Grid & Radar Distance Rings (30km, 60km, 90km) */}
-          <circle
-            cx="160"
-            cy="60"
-            r="28"
-            fill="none"
-            stroke="rgba(56, 189, 248, 0.15)"
-            strokeWidth="0.8"
-            strokeDasharray="2 3"
-          />
-          <circle
-            cx="160"
-            cy="60"
-            r="52"
-            fill="none"
-            stroke="rgba(56, 189, 248, 0.2)"
-            strokeWidth="0.8"
-          />
-          <circle
-            cx="160"
-            cy="60"
-            r="85"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.08)"
-            strokeWidth="0.8"
-            strokeDasharray="4 4"
-          />
+          <button
+            className={`${styles.layerBtn} ${activeLayer === "clouds" ? styles.activeLayerBtn : ""}`}
+            onClick={() => handleLayerSwitch("clouds")}
+            title="Live Satellite Clouds (Badal)"
+          >
+            <Cloud size={10} />
+            <span>Clouds</span>
+          </button>
 
-          {/* Crosshairs */}
-          <line
-            x1="160"
-            y1="5"
-            x2="160"
-            y2="115"
-            stroke="rgba(255, 255, 255, 0.06)"
-            strokeWidth="0.8"
-          />
-          <line
-            x1="10"
-            y1="60"
-            x2="310"
-            y2="60"
-            stroke="rgba(255, 255, 255, 0.06)"
-            strokeWidth="0.8"
-          />
-
-          {/* Range markings */}
-          <text x="164" y="35" fill="rgba(255, 255, 255, 0.25)" fontSize="6" fontFamily="monospace">
-            30km
-          </text>
-          <text x="164" y="11" fill="rgba(255, 255, 255, 0.25)" fontSize="6" fontFamily="monospace">
-            60km
-          </text>
-
-          {/* Dynamic Geographic Sector Labels based on actual City & Region */}
-          <text x="15" y="20" fill="rgba(56, 189, 248, 0.45)" fontSize="7" fontWeight="700">
-            {regionLabel || countryLabel} NW
-          </text>
-          <text x="15" y="110" fill="rgba(255, 255, 255, 0.3)" fontSize="7">
-            {latStr} • {lonStr}
-          </text>
-          <text x="240" y="20" fill="rgba(255, 255, 255, 0.35)" fontSize="7" fontWeight="600">
-            {countryLabel}
-          </text>
-
-          {/* Dynamic Weather Precipitation Layer (Doppler Blobs) */}
-          <ellipse
-            cx="220"
-            cy="52"
-            rx="35"
-            ry="24"
-            fill="#22c55e"
-            opacity={hasPrecipitation ? 0.45 : 0.22}
-            filter="blur(7px)"
-          />
-          <ellipse
-            cx="225"
-            cy="50"
-            rx="20"
-            ry="14"
-            fill="#eab308"
-            opacity={hasPrecipitation ? 0.55 : 0.3}
-            filter="blur(5px)"
-          />
-          {isStormy && (
-            <ellipse
-              cx="228"
-              cy="48"
-              rx="12"
-              ry="8"
-              fill="#ef4444"
-              opacity="0.75"
-              filter="blur(3px)"
-            />
-          )}
-
-          {/* Rotating Radar Sweep Line */}
-          <g transform="translate(160, 60)">
-            <line
-              x1="0"
-              y1="0"
-              x2="75"
-              y2="-40"
-              stroke="url(#sweepBeam)"
-              strokeWidth="1.5"
-              style={{
-                transformOrigin: "0 0",
-                animation: "radarSweep 5s linear infinite",
-              }}
-            />
-          </g>
-        </svg>
-
-        {/* Dynamic Center City Beacon */}
-        <div className={styles.radarCityPin}>
-          <span className={styles.radarPinDot} />
-          <span className={styles.radarPinText}>{cityLabel}</span>
+          <button
+            className={`${styles.layerBtn} ${activeLayer === "waves" ? styles.activeLayerBtn : ""}`}
+            onClick={() => handleLayerSwitch("waves")}
+            title="Sea Waves & Tsunami / Cyclone Track"
+          >
+            <Waves size={10} />
+            <span>Waves</span>
+          </button>
         </div>
 
-        {/* Expand / Radar Action */}
+        {/* Live Weather Map Iframe */}
+        <iframe
+          src={mapIframeUrl}
+          className={styles.radarIframe}
+          title={`Live Weather Radar for ${cityLabel}`}
+          loading="lazy"
+          allow="geolocation"
+        />
+
+        {/* Fullscreen / Expand Trigger */}
         <button
           className={styles.radarExpandBtn}
           onClick={() => {
             soundFX.playClick();
             onOpenRadar?.();
           }}
-          title="Open live radar map"
+          title="Expand live interactive weather map"
         >
           <Maximize2 size={12} />
         </button>
-
-        {/* Doppler Reflectivity Legend */}
-        <div className={styles.radarLegend}>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor_heavy} />
-            <span>Heavy</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor_mod} />
-            <span>Moderate</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor_light} />
-            <span>Light</span>
-          </div>
-        </div>
       </div>
 
       {/* 3. 5 Regional Stories (06–10) with designed NO IMAGE placeholder */}
